@@ -29,21 +29,22 @@ static_assert(!std::is_copy_assignable_v<MCP::HudElement>);
 static_assert(std::is_same_v<decltype(&ImGuiMCP::Button), ButtonFunction>);
 static_assert(std::is_same_v<decltype(&Framework::SetSection), void (*)(std::string)>);
 static_assert(std::is_same_v<decltype(&Framework::AddSectionItem), void (*)(std::string, RenderFunction)>);
-static_assert(std::is_same_v<decltype(&Framework::AddWindow),
-                             MCP::WindowInterface *(*)(RenderFunction, bool)>);
+static_assert(std::is_same_v<decltype(&Framework::FullPathAddSectionItem), void (*)(std::string, RenderFunction)>);
+static_assert(std::is_same_v<decltype(&Framework::RenameSection), bool (*)(std::string, std::string)>);
+static_assert(std::is_same_v<decltype(&Framework::DeleteSection), bool (*)(std::string)>);
+static_assert(std::is_same_v<decltype(&Framework::AddWindow), MCP::WindowInterface *(*)(RenderFunction, bool)>);
 static_assert(std::is_same_v<decltype(&Framework::AddWindowWithView),
                              MCP::WindowInterface *(*)(RenderFunction, std::string, bool)>);
 static_assert(std::is_same_v<decltype(&Framework::AddEvent), MCP::Event *(*)(EventCallback, float)>);
 static_assert(std::is_constructible_v<MCP::Event, EventCallback>);
-static_assert(std::is_same_v<decltype(&Framework::AddInputEvent),
-                             MCP::InputEvent *(*)(InputCallback)>);
-static_assert(std::is_same_v<decltype(&Framework::AddHudElement),
-                             MCP::HudElement *(*)(HudCallback)>);
+static_assert(std::is_same_v<decltype(&Framework::AddInputEvent), MCP::InputEvent *(*)(InputCallback)>);
+static_assert(std::is_same_v<decltype(&Framework::AddHudElement), MCP::HudElement *(*)(HudCallback)>);
 static_assert(std::is_same_v<decltype(&Framework::GetMenuFrameworkVersion), float (*)()>);
+static_assert(std::is_same_v<decltype(&Framework::GetMenuFrameworkAPIVersion), std::uint32_t (*)()>);
+static_assert(std::is_same_v<decltype(&ImGuiMCP::ImFormatString), int (*)(char *, size_t, const char *, ...)>);
 static_assert(std::is_same_v<decltype(&Framework::IsAnyBlockingWindowOpen), bool (*)()>);
 static_assert(std::is_same_v<decltype(&Framework::IsAnyBlockingWindowOpened), bool (*)()>);
-static_assert(std::is_same_v<decltype(&FontAwesome::UnicodeToUtf8),
-                             std::string (*)(unsigned int)>);
+static_assert(std::is_same_v<decltype(&FontAwesome::UnicodeToUtf8), std::string (*)(unsigned int)>);
 
 #if !defined(MENU_WINDOW)
 #error SFSE-MCP must preserve the SKSE-MCP MENU_WINDOW macro.
@@ -55,6 +56,4 @@ ButtonFunction volatile ConsumerButton = &ImGuiMCP::Button;
     return Framework::AddEvent(callback);
 }
 
-int main() {
-    return ConsumerButton == nullptr ? 1 : 0;
-}
+int main() { return ConsumerButton == nullptr ? 1 : 0; }

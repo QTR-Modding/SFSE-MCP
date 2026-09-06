@@ -27,6 +27,13 @@ void RegisterSettings() {
 }
 ```
 
+Menu paths use `/` between sections and `\/` for a literal slash in a section
+name. `FullPathAddSectionItem` bypasses the `SetSection` prefix and uses the
+original `AddSectionItem` host export. API version 1 adds runtime
+`RenameSection` and `DeleteSection`; both return `false` for an older host and
+for invalid, missing, or colliding paths. Use `GetMenuFrameworkAPIVersion()`
+before relying on those mutation calls; `0` means that query export is absent.
+
 A typical SKSE-MCP client port changes:
 
 - `#include <SKSEMCP/SKSEMenuFramework.hpp>` to
@@ -42,6 +49,7 @@ corrects obvious source defects instead of reproducing them:
 - Registration handles start at zero, failed registrations return `nullptr`,
   and owning registration wrappers cannot be copied.
 - `AddEvent(callback)` restores the documented default priority of `0.0F`.
+- `ImFormatString` returns the host formatter result instead of discarding it.
 - The window boolean is named `blockUserInput`, matching the state it controls.
 - `IsAnyBlockingWindowOpen` is the corrected name; the original
   `IsAnyBlockingWindowOpened` remains as a source-compatible alias.

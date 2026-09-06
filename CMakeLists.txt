@@ -2,10 +2,19 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     SFSE-MCP
-    VERSION 0.10.0
+    VERSION 0.11.0
     DESCRIPTION "Header-only client SDK for SFSE Menu Framework"
     LANGUAGES CXX
 )
+
+foreach(_sfsemcp_manifest IN ITEMS vcpkg.json cmake/ports/sfse-mcp/vcpkg.json)
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${_sfsemcp_manifest}" _sfsemcp_manifest_json)
+    string(JSON _sfsemcp_manifest_version GET "${_sfsemcp_manifest_json}" version-semver)
+    if(NOT _sfsemcp_manifest_version VERSION_EQUAL PROJECT_VERSION)
+        message(FATAL_ERROR
+            "${_sfsemcp_manifest} version ${_sfsemcp_manifest_version} does not match ${PROJECT_VERSION}.")
+    endif()
+endforeach()
 
 if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     message(FATAL_ERROR "In-source builds are not supported.")
