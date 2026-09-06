@@ -60,12 +60,24 @@ corrects obvious source defects instead of reproducing them:
 
 ## CMake
 
-From this repository checkout, the bundled local overlay port can be installed
-with:
+Copy `cmake/ports/sfse-mcp` into the same path in the client project, add
+`sfse-mcp` to its `vcpkg.json` dependencies, and add or merge this into the
+client's `vcpkg-configuration.json`:
+
+```json
+{
+  "overlay-ports": ["cmake/ports"]
+}
+```
+
+Then install with:
 
 ```powershell
-vcpkg install sfse-mcp:x64-windows --overlay-ports=cmake/ports
+vcpkg install --triplet x64-windows
 ```
+
+While the repository is private, Git must already be authenticated for an
+account with access.
 
 Then consume the installed header-only target normally:
 

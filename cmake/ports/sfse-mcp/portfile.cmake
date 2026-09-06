@@ -1,7 +1,13 @@
-get_filename_component(SFSEMCP_ROOT "${CURRENT_PORT_DIR}/../../.." ABSOLUTE)
+vcpkg_from_git(
+    OUT_SOURCE_PATH SOURCE_PATH
+    URL https://github.com/QTR-Modding/SFSE-MCP.git
+    REF d03965d7eba235e67aad98ff8997ecb14707e544
+    FETCH_REF main
+    HEAD_REF main
+)
 
 vcpkg_cmake_configure(
-    SOURCE_PATH "${SFSEMCP_ROOT}"
+    SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DBUILD_TESTING=OFF
 )
@@ -17,6 +23,6 @@ file(REMOVE_RECURSE
 )
 vcpkg_install_copyright(
     FILE_LIST
-        "${SFSEMCP_ROOT}/LICENSE"
-        "${SFSEMCP_ROOT}/THIRD_PARTY_NOTICES"
+        "${SOURCE_PATH}/LICENSE"
+        "${SOURCE_PATH}/THIRD_PARTY_NOTICES"
 )
