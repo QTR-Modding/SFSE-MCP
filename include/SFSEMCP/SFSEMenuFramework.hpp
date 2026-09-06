@@ -268,6 +268,8 @@ namespace SFSEMenuFramework {
         return result;
     }
 
+    // Legacy release projection retained for source compatibility. Use the
+    // integer API version below for capability checks.
     inline float GetMenuFrameworkVersion() {
         static auto func =
             Model::Internal::GetFunction<Model::GetMenuFrameworkVersionFunction>("GetMenuFrameworkVersion");
