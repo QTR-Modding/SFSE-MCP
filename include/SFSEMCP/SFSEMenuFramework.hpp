@@ -95,6 +95,8 @@ namespace SFSEMenuFramework {
         using AddWindowWithViewFunction = Model::WindowInterface* (*)(RenderFunction, const char*);
         using GetMainWindowFunction = Model::WindowInterface* (*)();
         using AddSectionItemFunction = void (*)(const char* path, RenderFunction rendererFunction);
+        using RenameSectionFunction = bool (*)(const char* path, const char* newName);
+        using DeleteSectionFunction = bool (*)(const char* path);
 
         using RegisterInputEventFunction = int64_t (*)(InputEventCallback callback);
         using UnregisterInputEventFunction = void (*)(uint64_t id);
@@ -105,6 +107,7 @@ namespace SFSEMenuFramework {
         using LoadTextureFunction = ImGuiMCP::ImTextureID (*)(const char* texturePath, ImGuiMCP::ImVec2* size);
         using DisposeTextureFunction = void (*)(const char* texturePath);
         using GetMenuFrameworkVersionFunction = float (*)();
+        using GetMenuFrameworkAPIVersionFunction = std::uint32_t (*)();
         using SetHotkeyEnabledFunction = void (*)(bool enabled);
         using IsHotkeyEnabledFunction = bool (*)();
 
@@ -173,11 +176,29 @@ namespace SFSEMenuFramework {
         };
     }
 
+    // Unescaped '/' characters separate path segments; use '\/' for a literal slash.
     inline void AddSectionItem(std::string menu, Model::RenderFunction rendererFunction) {
         static auto func = Model::Internal::GetFunction<Model::AddSectionItemFunction>("AddSectionItem");
         if (func) {
             return func((Model::Internal::key + "/" + menu).c_str(), rendererFunction);
         }
+    }
+
+    inline void FullPathAddSectionItem(std::string path, Model::RenderFunction rendererFunction) {
+        static auto func = Model::Internal::GetFunction<Model::AddSectionItemFunction>("AddSectionItem");
+        if (func) {
+            func(path.c_str(), rendererFunction);
+        }
+    }
+
+    inline bool RenameSection(std::string path, std::string newName) {
+        static auto func = Model::Internal::GetFunction<Model::RenameSectionFunction>("RenameSection");
+        return func && func(path.c_str(), newName.c_str());
+    }
+
+    inline bool DeleteSection(std::string path) {
+        static auto func = Model::Internal::GetFunction<Model::DeleteSectionFunction>("DeleteSection");
+        return func && func(path.c_str());
     }
 
     inline Model::WindowInterface* AddWindow(Model::RenderFunction rendererFunction, bool blockUserInput = true) {
@@ -256,6 +277,12 @@ namespace SFSEMenuFramework {
         }
 
         return 0.0;
+    }
+
+    inline std::uint32_t GetMenuFrameworkAPIVersion() {
+        static auto func = Model::Internal::GetFunction<Model::GetMenuFrameworkAPIVersionFunction>(
+            "GetMenuFrameworkAPIVersion");
+        return func ? func() : 0;
     }
 
     inline bool IsAnyBlockingWindowOpen() {
@@ -7594,8 +7621,9 @@ namespace ImGuiMCP {
         func_t func = GetMenuFrameworkFunction<func_t>("igImFormatStringV");
         va_list args;
         va_start(args, fmt);
-        func(buf, buf_size, fmt, args);
+        const int result = func(buf, buf_size, fmt, args);
         va_end(args);
+        return result;
     }
     inline int ImFormatStringV(char* buf, size_t buf_size, const char* fmt, va_list args) {
         using func_t = int (*)(char*, size_t, const char*, va_list);

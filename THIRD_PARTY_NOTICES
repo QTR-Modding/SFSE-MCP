@@ -77,6 +77,17 @@ and makes registration owners non-copyable, and adds failure/null checks.
 normal framework window and currently ignores its view name because the pinned
 Skyrim host never implemented the referenced export.
 
+The later host ABI names and signatures for runtime rename/delete and
+API-version queries were checked against SKSE Menu Framework 3
+`resources/SKSEMenuFramework.h` at commit
+c8cfc5c93fa3b5f6261cef695ab814e4467dd980 (GPL-3.0-only):
+https://github.com/QTR-Modding/SKSE-Menu-Framework-3/blob/c8cfc5c93fa3b5f6261cef695ab814e4467dd980/resources/SKSEMenuFramework.h
+
+The full-path helper reuses the original `AddSectionItem` ABI. All four
+SFSE-MCP resolver wrappers are independently written in the existing MIT
+interoperability pattern and contain no menu-tree, parser, or other GPL host
+implementation.
+
 Source: https://github.com/QTR-Modding/SKSE-MCP
 Commit: 996e0215e98add566dbb98234bc81b8fe82abb52
 Copyright (c) 2024-2026 SkyrimThiago
