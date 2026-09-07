@@ -1517,6 +1517,8 @@ namespace ImGuiMCP {
     public:
         ImGuiTextFilter(const char* default_filter = "") { data = Create(default_filter); }
         ~ImGuiTextFilter() { Destroy(); }
+        ImGuiTextFilter(const ImGuiTextFilter&) = delete;
+        ImGuiTextFilter& operator=(const ImGuiTextFilter&) = delete;
         inline bool Draw(const char* label = "Filter (inc,-exc)", float width = 0.0f) {
             using func_t = bool (*)(Data*, const char*, float);
             func_t func = GetMenuFrameworkFunction<func_t>("ImGuiTextFilter_Draw");

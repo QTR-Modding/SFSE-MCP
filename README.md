@@ -58,6 +58,10 @@ corrects obvious source defects instead of reproducing them:
   creates a normal framework window; its `viewName` is currently ignored
   because the pinned Skyrim host never implemented a view-specific export.
 
+Pointers returned by `AddWindow`, `AddWindowWithView`, and `GetMainWindow` are
+borrowed from the framework, remain stable until process exit, and must not be
+deleted by the client.
+
 ## CMake
 
 Copy `cmake/ports/sfse-mcp` into the same path in the client project, add

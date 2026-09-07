@@ -26,6 +26,8 @@ static_assert(!std::is_copy_constructible_v<MCP::InputEvent>);
 static_assert(!std::is_copy_assignable_v<MCP::InputEvent>);
 static_assert(!std::is_copy_constructible_v<MCP::HudElement>);
 static_assert(!std::is_copy_assignable_v<MCP::HudElement>);
+static_assert(!std::is_copy_constructible_v<ImGuiMCP::ImGuiTextFilter>);
+static_assert(!std::is_copy_assignable_v<ImGuiMCP::ImGuiTextFilter>);
 static_assert(std::is_same_v<decltype(&ImGuiMCP::Button), ButtonFunction>);
 static_assert(std::is_same_v<decltype(&Framework::SetSection), void (*)(std::string)>);
 static_assert(std::is_same_v<decltype(&Framework::AddSectionItem), void (*)(std::string, RenderFunction)>);
