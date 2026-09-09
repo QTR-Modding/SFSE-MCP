@@ -9,8 +9,12 @@ names, paths, and packaging with their SFSE equivalents.
 
 The SDK contains no Dear ImGui implementation, static library, or transitive
 ImGui dependency. Every `ImGuiMCP` call resolves its corresponding export from
-the loaded `SFSEMenuFramework.dll` through `GetProcAddress`, just as SKSE-MCP
-does with SKSE Menu Framework.
+the authenticated, loaded `SFSEMenuFramework.dll`. The SDK enumerates loaded
+modules, verifies the pinned signing key and loaded executable bytes, and reads
+the verified export table directly. Detected replacements or modified exports
+produce an error and stop the process before calling that provider. This does
+not prevent arbitrary code already inside the process from patching the client
+or its calls after verification.
 
 ## Use
 
@@ -62,6 +66,15 @@ Pointers returned by `AddWindow`, `AddWindowWithView`, and `GetMainWindow` are
 borrowed from the framework, remain stable until process exit, and must not be
 deleted by the client.
 
+Call framework APIs from SFSE load callbacks or later, not `DllMain` or global
+initializers: first use performs signature verification outside the loader lock.
+`IsInstalled()` means a verified framework is loaded, not merely present on disk.
+Missing providers remain retryable; optional exports retain their existing
+fallbacks. These trust checks change binding, not callback signatures or ownership.
+The SDK remains MIT and header-only. MSVC links Windows `Crypt32` automatically.
+Rebuilt forks can select their own public-key header with
+`SFSEMCP_SIGNING_KEY_HEADER`; shipped clients have no runtime bypass switch.
+
 ## CMake
 
 Copy `cmake/ports/sfse-mcp` into the same path in the client project, add
@@ -105,9 +118,7 @@ therefore returns a null texture and disposal is a no-op.
 To build the SDK checks:
 
 ```powershell
-cmake -S . -B build -DBUILD_TESTING=ON
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
+./tests/run_signed_tests.ps1
 ```
 
 SFSE-MCP is available under the MIT License. See `THIRD_PARTY_NOTICES` for the

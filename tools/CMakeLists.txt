@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.25)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(SFSEMCPVerifier LANGUAGES CXX)
+endif()
+
+add_executable(sfsemcp_verify_signature verify_signature.cpp)
+target_compile_features(sfsemcp_verify_signature PRIVATE cxx_std_23)
+target_include_directories(sfsemcp_verify_signature PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+if(MSVC)
+    target_compile_options(sfsemcp_verify_signature PRIVATE /W4 /WX /permissive- /EHsc)
+endif()
