@@ -3,22 +3,11 @@ if(NOT DEFINED MAP_FILE OR NOT EXISTS "${MAP_FILE}")
 endif()
 
 file(READ "${MAP_FILE}" _map)
-foreach(
-    _forbidden
-    IN ITEMS
-        "imgui.cpp.obj"
-        "imgui_draw.cpp.obj"
-        "imgui_tables.cpp.obj"
-        "imgui_widgets.cpp.obj"
-        "SFSE-MCP-ImGui.lib"
-)
-    string(FIND "${_map}" "${_forbidden}" _found)
-    if(NOT _found EQUAL -1)
-        message(FATAL_ERROR "Consumer unexpectedly contains an ImGui implementation object: ${_forbidden}")
-    endif()
-endforeach()
+string(REGEX MATCH [[imgui(_draw|_tables|_widgets)?(\.cpp)?\.obj|SFSE-MCP-ImGui\.lib]] _implementation "${_map}")
+if(_implementation)
+    message(FATAL_ERROR "Consumer unexpectedly contains an ImGui implementation object: ${_implementation}")
+endif()
 
-string(FIND "${_map}" "header_compile.obj" _consumer_object)
-if(_consumer_object EQUAL -1)
+if(NOT _map MATCHES [[header_compile(\.cpp)?\.obj]])
     message(FATAL_ERROR "Consumer object was not found in its own link map.")
 endif()

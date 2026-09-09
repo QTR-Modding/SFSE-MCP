@@ -17,25 +17,19 @@
 #include <new>
 #include <string>
 
+#include "detail/ProviderBinding.hpp"
+
 namespace RE {
     class InputEvent;
 }
 
 inline HMODULE GetMenuFrameworkModule() {
-    static HMODULE menuFramework = nullptr;
-    if (!menuFramework) {
-        menuFramework = GetModuleHandleW(L"SFSEMenuFramework");
-    }
-    return menuFramework;
+    return SFSEMCP::detail::VerifiedModule();
 }
 
 template <class T>
 T GetMenuFrameworkFunction(LPCSTR name) {
-    auto menuFramework = GetMenuFrameworkModule();
-    if (!menuFramework) {
-        return nullptr;
-    }
-    return reinterpret_cast<T>(GetProcAddress(menuFramework, name));
+    return reinterpret_cast<T>(SFSEMCP::detail::VerifiedFunction(name));
 }
 #define MENU_WINDOW SFSEMenuFramework::Model::WindowInterface*
 
@@ -48,8 +42,7 @@ namespace ImGuiMCP {
 
 namespace SFSEMenuFramework {
     inline bool IsInstalled() {
-        constexpr auto dllPath = "Data/SFSE/Plugins/SFSEMenuFramework.dll";
-        return GetMenuFrameworkModule() != nullptr || std::filesystem::exists(dllPath);
+        return GetMenuFrameworkModule() != nullptr;
     }
 
     namespace Model {
@@ -64,8 +57,8 @@ namespace SFSEMenuFramework {
 
         namespace Internal {
             template <class T>
-            T GetFunction(LPCSTR name) {
-                return GetMenuFrameworkFunction<T>(name);
+            SFSEMCP::detail::OptionalFunction<T> GetFunction(LPCSTR name) {
+                return SFSEMCP::detail::OptionalFunction<T>(name);
             }
 
             inline std::string key;
