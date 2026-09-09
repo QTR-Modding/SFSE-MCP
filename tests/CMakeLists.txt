@@ -104,11 +104,21 @@ if(MSVC)
     )
 endif()
 
-foreach(_sfsemcp_mode IN ITEMS valid retry alias concurrent code exports teardown)
+foreach(_sfsemcp_mode IN ITEMS valid retry alias concurrent code exports teardown cache)
     add_test(NAME sfsemcp.provider_${_sfsemcp_mode}
         COMMAND sfsemcp_provider_binding "${_sfsemcp_mode}" "$<TARGET_FILE:sfsemcp_mock_host>")
     set_tests_properties(sfsemcp.provider_${_sfsemcp_mode} PROPERTIES TIMEOUT 30)
 endforeach()
+foreach(_sfsemcp_mode IN ITEMS inspection_enum inspection_file inspection_map inspection_pin reject_export)
+    add_test(NAME sfsemcp.${_sfsemcp_mode}
+        COMMAND "${CMAKE_COMMAND}"
+            "-DEXECUTABLE=$<TARGET_FILE:sfsemcp_provider_binding>"
+            "-DHOST_DLL=$<TARGET_FILE:sfsemcp_mock_host>"
+            "-DMODE=${_sfsemcp_mode}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/expect_rejection.cmake")
+    set_tests_properties(sfsemcp.${_sfsemcp_mode} PROPERTIES TIMEOUT 15)
+endforeach()
+
 add_test(NAME sfsemcp.unsigned_provider_rejected
     COMMAND sfsemcp_provider_binding signature "$<TARGET_FILE:sfsemcp_unsigned_mock_host>")
 set_tests_properties(sfsemcp.unsigned_provider_rejected PROPERTIES TIMEOUT 30)

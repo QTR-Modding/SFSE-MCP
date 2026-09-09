@@ -63,6 +63,7 @@ function Get-TestKeyHash($Certificate) {
 	try { $sha256.ComputeHash($Certificate.GetPublicKey()) } finally { $sha256.Dispose() }
 }
 
+Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1')
 $certificates = @()
 try {
 	foreach ($role in @('primary', 'other')) {
@@ -103,7 +104,7 @@ inline constexpr SigningKeyHash ReleaseSigningKey{ $initializer };
 			}
 		}
 	}
-	$configure = @('-S', $source, '-B', $build, '-DBUILD_TESTING=ON',
+	$configure = @('-S', $source, '-B', $build, '-DBUILD_TESTING=ON', "-DCMAKE_BUILD_TYPE=$Configuration",
 		"-DSFSEMCP_TEST_SIGNING_KEY_HEADER=$keyHeader", "-DSFSEMCP_TEST_INCLUDE_DIRECTORY=$testInclude")
 	if ($Generator) { $configure += @('-G', $Generator) }
 	if (-not $Generator -or $Generator -like 'Visual Studio*') { $configure += @('-A', 'x64') }

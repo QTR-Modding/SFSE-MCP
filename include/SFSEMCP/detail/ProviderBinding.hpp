@@ -13,6 +13,7 @@
 #include <utility>
 #include <atomic>
 #include <cstdlib>
+#include <map>
 
 namespace SFSEMCP::detail {
 
@@ -37,26 +38,44 @@ class ProviderBinding {
 public:
     VerifiedProvider* Get() {
         std::lock_guard lock(mutex_);
+        return GetLocked();
+    }
+
+    FARPROC Resolve(std::string_view name) {
+        std::lock_guard lock(mutex_);
+        auto* provider = GetLocked();
+        if (!provider) return nullptr;  // A missing host must remain retryable.
+        if (const auto found = exports_.find(name); found != exports_.end()) return found->second;
+        BindingError error{};
+        const auto function = provider->Resolve(name, error);
+        if (error != BindingError::None) RejectProvider(error);
+        // Own the name and retain only results from this authenticated, pinned host.
+        // A missing optional export is also stable for that host.
+        exports_.emplace(name, function);
+        return function;
+    }
+
+private:
+    VerifiedProvider* GetLocked() {
         if (provider_) return provider_.get();
         BindingError error{};
         auto module = FindProvider(error);
-        if (error == BindingError::Missing || error == BindingError::Inspection) return nullptr;
+        if (error == BindingError::Missing) return nullptr;
         if (error != BindingError::None) RejectProvider(error);
         auto candidate = std::make_unique<VerifiedProvider>();
         error = candidate->Bind(module, ReleaseSigningKey);
-        if (error == BindingError::Inspection) return nullptr;
         if (error != BindingError::None) RejectProvider(error);
         // Accepted framework code must remain resident through client teardown.
         HMODULE pinned{};
         if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
-                reinterpret_cast<LPCWSTR>(module), &pinned) || pinned != module) return nullptr;
+                reinterpret_cast<LPCWSTR>(module), &pinned) || pinned != module) RejectProvider(BindingError::Inspection);
         provider_ = std::move(candidate);
         return provider_.get();
     }
 
-private:
     std::mutex mutex_;
     std::unique_ptr<VerifiedProvider> provider_;
+    std::map<std::string, FARPROC, std::less<>> exports_;
 };
 
 inline ProviderBinding& Binding() {
@@ -73,12 +92,7 @@ inline HMODULE VerifiedModule() {
 }
 
 inline FARPROC VerifiedFunction(const char* name) {
-    auto* provider = Binding().Get();
-    if (!provider) return nullptr;
-    BindingError error{};
-    auto function = provider->Resolve(name, error);
-    if (error != BindingError::None) RejectProvider(error);
-    return function;
+    return Binding().Resolve(name);
 }
 
 // Framework registration can precede provider loading. Do not permanently cache

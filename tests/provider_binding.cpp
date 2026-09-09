@@ -17,6 +17,23 @@ struct TeardownLookup {
 decltype(&GetModuleHandleW) originalModule = &GetModuleHandleW;
 decltype(&GetProcAddress) originalFunction = &GetProcAddress;
 unsigned fakeCalls{};
+decltype(&GetModuleHandleExW) originalModuleReference = &GetModuleHandleExW;
+decltype(&VirtualQuery) originalQuery = &VirtualQuery;
+std::atomic<unsigned> queryCalls{};
+
+HWND WINAPI ConsoleForTest() { return reinterpret_cast<HWND>(1); }
+BOOL WINAPI FailEnumeration(HANDLE, HMODULE*, DWORD, LPDWORD) { return FALSE; }
+HANDLE WINAPI FailOpen(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE) {
+    return INVALID_HANDLE_VALUE;
+}
+LPVOID WINAPI FailMap(HANDLE, DWORD, DWORD, DWORD, SIZE_T) { return nullptr; }
+BOOL WINAPI FailPin(DWORD flags, LPCWSTR name, HMODULE* module) {
+    return (flags & GET_MODULE_HANDLE_EX_FLAG_PIN) ? FALSE : originalModuleReference(flags, name, module);
+}
+SIZE_T WINAPI CountQuery(LPCVOID address, PMEMORY_BASIC_INFORMATION information, SIZE_T length) {
+    ++queryCalls;
+    return originalQuery(address, information, length);
+}
 
 bool FakeButton(const char*, ImGuiMCP::ImVec2) { ++fakeCalls; return false; }
 HMODULE WINAPI AliasModule(LPCWSTR name) {
@@ -65,7 +82,7 @@ bool WriteMemory(void* address, const void* bytes, std::size_t size) {
     return VirtualProtect(address, size, old, &ignored) != FALSE;
 }
 
-int CheckExports(HMODULE module) {
+int CheckExports(HMODULE module, bool rejectThroughPublicAPI = false) {
     VerifiedProvider provider;
     if (provider.Bind(module, ReleaseSigningKey) != BindingError::None) return 20;
     BindingError error{};
@@ -86,6 +103,10 @@ int CheckExports(HMODULE module) {
         // Out-of-image, header/data, forwarded export, and different in-code RVA.
         for (DWORD changed : std::array<DWORD, 4>{0xFFFFFFFFu, 1u, directory.VirtualAddress, saved + 1}) {
             if (!WriteMemory(slot, &changed, sizeof(changed))) return 23;
+            if (rejectThroughPublicAPI) {
+                ImGuiMCP::Button("MCP dispatch", {42, 24});
+                return 35;  // Must terminate with the export diagnostic instead.
+            }
             const auto result = provider.Resolve("igButton", error);
             if (!WriteMemory(slot, &saved, sizeof(saved))) return 24;
             if (result || error != BindingError::Export) return 25;
@@ -103,6 +124,38 @@ int wmain(int argc, wchar_t** argv) {
     if (mode == L"retry" && SFSEMenuFramework::IsHotkeyEnabled()) return 3;
     HMODULE module = LoadLibraryW(argv[2]);
     if (!module) return 4;
+    if (mode.starts_with(L"inspection_") || mode == L"reject_export") {
+        // Select stderr diagnostics without opening a dialog or creating a console.
+        if (!PatchImport("GetConsoleWindow", reinterpret_cast<FARPROC>(&ConsoleForTest))) return 29;
+        std::setvbuf(stderr, nullptr, _IONBF, 0);
+        if (mode == L"reject_export") {
+            if (GetMenuFrameworkModule() != module) return 30;
+            return CheckExports(module, true);
+        }
+        const char* importName{};
+        FARPROC replacement{};
+        if (mode == L"inspection_enum") { importName = "K32EnumProcessModules"; replacement = reinterpret_cast<FARPROC>(&FailEnumeration); }
+        if (mode == L"inspection_file") { importName = "CreateFileW"; replacement = reinterpret_cast<FARPROC>(&FailOpen); }
+        if (mode == L"inspection_map") { importName = "MapViewOfFile"; replacement = reinterpret_cast<FARPROC>(&FailMap); }
+        if (mode == L"inspection_pin") { importName = "GetModuleHandleExW"; replacement = reinterpret_cast<FARPROC>(&FailPin); }
+        if (!importName || !PatchImport(importName, replacement)) return 31;
+        ImGuiMCP::Button("MCP dispatch", {42, 24});
+        return 32;  // Neither a null call nor silent failure is acceptable.
+    }
+    if (mode == L"cache") {
+        if (!PatchImport("VirtualQuery", reinterpret_cast<FARPROC>(&CountQuery))) return 33;
+        std::string name = "igButton";
+        const auto button = VerifiedFunction(name.c_str());
+        if (!button || queryCalls == 0) return 34;
+        name.assign("NoButton");
+        if (VerifiedFunction(name.c_str())) return 36;
+        queryCalls = 0;
+        for (unsigned i = 0; i < 10000; ++i) {
+            if (!ImGuiMCP::Button("MCP dispatch", {42, 24}) ||
+                VerifiedFunction("igButton") != button || VerifiedFunction("NoButton")) return 37;
+        }
+        if (queryCalls != 0) return 38;
+    }
     if (mode == L"signature") {
         VerifiedProvider provider;
         return provider.Bind(module, ReleaseSigningKey) == BindingError::Signature ? 0 : 5;
@@ -143,7 +196,8 @@ int wmain(int argc, wchar_t** argv) {
         std::atomic<unsigned> passed{};
         std::array<std::thread, 16> threads;
         for (auto& thread : threads) thread = std::thread([&] {
-            if (GetMenuFrameworkModule() == module && SFSEMenuFramework::IsHotkeyEnabled()) ++passed;
+            if (GetMenuFrameworkModule() == module && SFSEMenuFramework::IsHotkeyEnabled() &&
+                ImGuiMCP::Button("MCP dispatch", {42, 24})) ++passed;
         });
         for (auto& thread : threads) thread.join();
         if (passed != threads.size()) return 16;
