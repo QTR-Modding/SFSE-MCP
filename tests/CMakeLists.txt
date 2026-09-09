@@ -5,14 +5,32 @@ endif()
 file(TO_CMAKE_PATH "${SFSEMCP_TEST_SIGNING_KEY_HEADER}" SFSEMCP_TEST_SIGNING_KEY_HEADER)
 add_subdirectory("../tools" "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
-add_executable(sfsemcp_header_compile header_compile.cpp)
-target_link_libraries(sfsemcp_header_compile PRIVATE SFSE-MCP::SFSE-MCP)
+set(SFSEMCP_TEST_INCLUDE_DIRECTORY "" CACHE PATH "Extracted single-header SDK; empty uses source headers")
+add_library(sfsemcp_test_sdk INTERFACE)
+if(SFSEMCP_TEST_INCLUDE_DIRECTORY)
+    if(NOT EXISTS "${SFSEMCP_TEST_INCLUDE_DIRECTORY}/SFSEMCP/SFSEMenuFramework.hpp")
+        message(FATAL_ERROR "Single-header SDK is missing.")
+    endif()
+    target_include_directories(sfsemcp_test_sdk INTERFACE "${SFSEMCP_TEST_INCLUDE_DIRECTORY}")
+    target_compile_features(sfsemcp_test_sdk INTERFACE cxx_std_23)
+else()
+    target_link_libraries(sfsemcp_test_sdk INTERFACE SFSE-MCP::SFSE-MCP)
+endif()
+
+add_executable(sfsemcp_header_compile header_compile.cpp header_odr.cpp)
+add_executable(sfsemcp_release_header_compile header_compile.cpp header_odr.cpp)
+target_link_libraries(sfsemcp_release_header_compile PRIVATE sfsemcp_test_sdk)
+if(MSVC)
+    target_compile_options(sfsemcp_release_header_compile PRIVATE /W4 /WX /permissive- /EHsc)
+endif()
+add_test(NAME sfsemcp.release_header_compile COMMAND sfsemcp_release_header_compile)
+target_link_libraries(sfsemcp_header_compile PRIVATE sfsemcp_test_sdk)
 
 add_library(sfsemcp_mock_host SHARED mock_host.cpp)
 set_target_properties(sfsemcp_mock_host PROPERTIES OUTPUT_NAME SFSEMenuFramework)
 
 add_executable(sfsemcp_wrapper_mock wrapper_mock.cpp)
-target_link_libraries(sfsemcp_wrapper_mock PRIVATE SFSE-MCP::SFSE-MCP)
+target_link_libraries(sfsemcp_wrapper_mock PRIVATE sfsemcp_test_sdk)
 add_dependencies(sfsemcp_wrapper_mock sfsemcp_mock_host)
 
 add_library(sfsemcp_legacy_mock_host SHARED legacy_mock_host.cpp)
@@ -26,7 +44,7 @@ set_target_properties(
 )
 
 add_executable(sfsemcp_wrapper_legacy wrapper_legacy.cpp)
-target_link_libraries(sfsemcp_wrapper_legacy PRIVATE SFSE-MCP::SFSE-MCP)
+target_link_libraries(sfsemcp_wrapper_legacy PRIVATE sfsemcp_test_sdk)
 add_dependencies(sfsemcp_wrapper_legacy sfsemcp_legacy_mock_host)
 
 foreach(_sfsemcp_fixture IN ITEMS unsigned wrong_key)
@@ -39,7 +57,7 @@ foreach(_sfsemcp_fixture IN ITEMS unsigned wrong_key)
 endforeach()
 
 add_executable(sfsemcp_provider_binding provider_binding.cpp)
-target_link_libraries(sfsemcp_provider_binding PRIVATE SFSE-MCP::SFSE-MCP)
+target_link_libraries(sfsemcp_provider_binding PRIVATE sfsemcp_test_sdk)
 add_dependencies(sfsemcp_provider_binding sfsemcp_mock_host sfsemcp_unsigned_mock_host sfsemcp_wrong_key_mock_host)
 
 foreach(_sfsemcp_test_target IN ITEMS

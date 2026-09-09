@@ -1,4 +1,5 @@
 #include <SFSEMCP/SFSEMenuFramework.hpp>
+#include <SFSEMCP/SFSEMenuFramework.hpp>
 
 #include <type_traits>
 
@@ -58,4 +59,8 @@ ButtonFunction volatile ConsumerButton = &ImGuiMCP::Button;
     return Framework::AddEvent(callback);
 }
 
-int main() { return ConsumerButton == nullptr ? 1 : 0; }
+SFSEMCP::detail::ProviderBinding* OtherBindingAddress();
+
+int main() {
+    return ConsumerButton == nullptr || OtherBindingAddress() != &SFSEMCP::detail::Binding() ? 1 : 0;
+}

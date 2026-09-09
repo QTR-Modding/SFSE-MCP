@@ -75,6 +75,24 @@ The SDK remains MIT and header-only. MSVC links Windows `Crypt32` automatically.
 Rebuilt forks can select their own public-key header with
 `SFSEMCP_SIGNING_KEY_HEADER`; shipped clients have no runtime bypass switch.
 
+## Single-header download
+
+Vcpkg is optional. The SDK ZIP contains one self-contained
+`SFSEMCP/SFSEMenuFramework.hpp`. Copy the `SFSEMCP` folder into your project's
+include directory, then use the same include and API shown above. It requires
+C++23 and Windows x64; no signing tools or private key are needed. Keep its
+embedded license notices. Use either this download or the multi-file SDK,
+not both in the same project.
+
+To generate the ZIP from the maintained source headers:
+
+```powershell
+./scripts/Package-Sdk.ps1
+```
+
+The versioned archive is written to `build/packages`. Generated headers and
+archives are not committed.
+
 ## CMake
 
 Copy `cmake/ports/sfse-mcp` into the same path in the client project, add
@@ -119,6 +137,7 @@ To build the SDK checks:
 
 ```powershell
 ./tests/run_signed_tests.ps1
+./tests/run_signed_tests.ps1 -Standalone
 ```
 
 SFSE-MCP is available under the MIT License. See `THIRD_PARTY_NOTICES` for the

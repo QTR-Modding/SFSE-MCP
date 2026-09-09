@@ -1,5 +1,6 @@
 param(
 	[string] $BuildDirectory,
+	[switch] $Standalone,
 	[string] $CMake,
 	[string] $SignTool,
 	[string] $Generator,
@@ -9,7 +10,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $source = Split-Path -Parent $PSScriptRoot
-if (-not $BuildDirectory) { $BuildDirectory = Join-Path $source 'build\signed-tests' }
+if (-not $BuildDirectory) {
+    $name = if ($Standalone) { 'build\signed-tests-standalone' } else { 'build\signed-tests' }
+    $BuildDirectory = Join-Path $source $name
+}
 $build = [System.IO.Path]::GetFullPath($BuildDirectory)
 if ($build.TrimEnd('\') -eq $source.TrimEnd('\')) { throw 'Choose a separate build directory.' }
 
@@ -76,7 +80,6 @@ try {
 	$keyHeader = Join-Path $build 'test-signing-key.hpp'
 	$header = @"
 #pragma once
-#include <SFSEMCP/detail/Authenticode.hpp>
 namespace SFSEMCP::detail {
 inline constexpr SigningKeyHash ReleaseSigningKey{ $initializer };
 }
@@ -85,7 +88,23 @@ inline constexpr SigningKeyHash ReleaseSigningKey{ $initializer };
 	$publicInfo = [ordered]@{ Subject = $certificate.Subject; CertificateThumbprint = $certificate.Thumbprint; OtherCertificateThumbprint = $certificates[1].Thumbprint; PublicKeySha256 = $keyHex }
 	[System.IO.File]::WriteAllText((Join-Path $build 'test-signing-public.json'), ($publicInfo | ConvertTo-Json),
 		[System.Text.UTF8Encoding]::new($false))
-	$configure = @('-S', $source, '-B', $build, '-DBUILD_TESTING=ON', "-DSFSEMCP_TEST_SIGNING_KEY_HEADER=$keyHeader")
+	$testInclude = ''
+	if ($Standalone) {
+		$packageRoot = Join-Path $build 'standalone'
+		$archive = & (Join-Path $source 'scripts\Package-Sdk.ps1') -OutputDirectory $packageRoot
+		$testInclude = Join-Path $packageRoot 'extracted'
+		Expand-Archive -LiteralPath $archive -DestinationPath $testInclude -Force
+		$expected = @('LICENSE', 'THIRD_PARTY_NOTICES', 'README.txt', 'SFSEMCP\SFSEMenuFramework.hpp')
+		$actual = @(Get-ChildItem -LiteralPath $testInclude -Recurse -File)
+		if ($actual.Count -ne $expected.Count) { throw 'Unexpected files in the single-header package.' }
+		foreach ($file in $expected) {
+			if (-not (Test-Path -LiteralPath (Join-Path $testInclude $file) -PathType Leaf)) {
+				throw "Missing SDK package file: $file"
+			}
+		}
+	}
+	$configure = @('-S', $source, '-B', $build, '-DBUILD_TESTING=ON',
+		"-DSFSEMCP_TEST_SIGNING_KEY_HEADER=$keyHeader", "-DSFSEMCP_TEST_INCLUDE_DIRECTORY=$testInclude")
 	if ($Generator) { $configure += @('-G', $Generator) }
 	if (-not $Generator -or $Generator -like 'Visual Studio*') { $configure += @('-A', 'x64') }
 	Invoke-Checked $CMake $configure
