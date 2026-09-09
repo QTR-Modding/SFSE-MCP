@@ -13,8 +13,8 @@ the authenticated, loaded `SFSEMenuFramework.dll`. The SDK enumerates loaded
 modules, verifies the pinned signing key and loaded executable bytes, and reads
 the verified export table directly. Detected replacements or modified exports
 produce an error and stop the process before calling that provider. This does
-not prevent arbitrary code already inside the process from patching the client
-or its calls after verification.
+not prevent arbitrary in-process tampering with the client, imports, mutable
+runtime state, or code changed after verification.
 
 ## Use
 
