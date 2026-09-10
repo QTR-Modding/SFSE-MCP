@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "sfse-mcp",
-  "version-semver": "0.12.0",
+  "version-semver": "1.0.0",
   "description": "Public C++23 SDK for SFSE menu integrations",
   "license": "MIT",
   "supports": "windows & x64",
@@ -11,5 +11,5 @@
       "default-features": false
     }
   ],
-  "port-version": 1
+  "port-version": 0
 }
