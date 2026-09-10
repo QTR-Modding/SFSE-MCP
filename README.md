@@ -51,6 +51,10 @@ Clone with `--recurse-submodules`, then add this repository with CMake's
 `lib/clib-utils-qtr/include` to your include paths. Only QTR Utils' signing
 headers are used; no Skyrim modules are required.
 
+`cmake --install` includes the required QTR signing headers alongside the SDK.
+Packagers supplying QTR separately can set `SFSEMCP_BUNDLE_SIGNING_HEADERS=OFF`;
+the vcpkg port already does this.
+
 ## Add a settings page
 
 ```cpp
