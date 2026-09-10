@@ -25,11 +25,11 @@ notices. No vcpkg, signing tools or private key is needed.
    ```json
    "dependencies": [
      "sfse-mcp",
-     { "name": "clib-utils-qtr", "default-features": false, "features": ["signing"] }
+     { "name": "clib-utils-qtr", "default-features": false }
    ]
    ```
 
-   Keep the explicit signing selection: vcpkg can otherwise enable QTR's
+   Keep the explicit base-only dependency: vcpkg can otherwise enable QTR's
    default Skyrim features through the transitive dependency.
 3. Add `"overlay-ports": ["cmake/ports"]` to your `vcpkg-configuration.json`.
 4. Run `vcpkg install --triplet x64-windows`.

@@ -8,10 +8,7 @@
   "dependencies": [
     {
       "name": "clib-utils-qtr",
-      "default-features": false,
-      "features": [
-        "signing"
-      ]
+      "default-features": false
     },
     {
       "name": "vcpkg-cmake",
