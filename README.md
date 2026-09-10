@@ -1,155 +1,173 @@
 # SFSE-MCP
 
-A header-only C++ SDK for adding menus to
+Add an in-game settings menu to your C++ SFSE mod with
 [SFSE Menu Framework](https://github.com/QTR-Modding/SFSE-Menu-Framework).
-Based on SkyrimThiago's SKSE-MCP. Your plugin calls `ImGuiMCP`; the framework
-DLL runs ImGui.
+Based on SkyrimThiago's SKSE-MCP.
 
-Requires C++23 and Windows x64.
+## 1. Add the SDK
 
-## Add it to your project
+Use an existing **C++23, Windows x64 SFSE project**. Choose either the header
+or [vcpkg](#vcpkg); you don't need both.
 
-Choose one method; do not mix the single-header and multi-file SDK.
+### Standalone header
 
-### Single-header ZIP
-
-Copy the ZIP's `SFSEMCP` folder into your project's include directory.
-It contains one self-contained `SFSEMenuFramework.hpp`, including the license
-notices. No vcpkg, signing tools or private key is needed.
-
-### Vcpkg
-
-1. Copy both folders from [cmake/ports](cmake/ports) into your project's `cmake/ports`.
-2. Add these dependencies to your `vcpkg.json`:
-
-   ```json
-   "dependencies": [
-     "sfse-mcp",
-     { "name": "clib-utils-qtr", "default-features": false }
-   ]
-   ```
-
-   Keep the explicit base-only dependency: vcpkg can otherwise enable QTR's
-   default Skyrim features through the transitive dependency.
-3. Add `"overlay-ports": ["cmake/ports"]` to your `vcpkg-configuration.json`.
-4. Run `vcpkg install --triplet x64-windows`.
-
-Then add this to your CMake project:
-
-```cmake
-find_package(SFSE-MCP CONFIG REQUIRED)
-target_link_libraries(my_plugin PRIVATE SFSE-MCP::SFSE-MCP)
-```
-
-This adds the headers and C++23 requirement, not an ImGui library.
-While this repository is private, Git needs an account with access.
-
-### Source checkout
-
-Clone with `--recurse-submodules`, then add this repository with CMake's
-`add_subdirectory`. For a manual build, add both `include` and
-`lib/clib-utils-qtr/include` to your include paths. Only QTR Utils' signing
-headers are used; no Skyrim modules are required.
-
-`cmake --install` includes the required QTR signing headers alongside the SDK.
-Packagers supplying QTR separately can set `SFSEMCP_BUNDLE_SIGNING_HEADERS=OFF`;
-the vcpkg port already does this.
-
-## Add a settings page
+Download the SDK from the framework's Nexus page under **Miscellaneous Files**.
+Copy its `SFSEMCP` folder into your project's include directory, keeping the
+included license notices. You can then include:
 
 ```cpp
 #include <SFSEMCP/SFSEMenuFramework.hpp>
+```
 
-void __stdcall DrawSettings() {
-    ImGuiMCP::TextUnformatted("Hello from Starfield");
+### Vcpkg
+
+1. Copy both port folders from [cmake/ports](cmake/ports) into your project's
+   `cmake/ports`.
+2. Add these entries to the `dependencies` array in your `vcpkg.json`:
+
+   ```json
+   "sfse-mcp",
+   { "name": "clib-utils-qtr", "default-features": false }
+   ```
+
+   Keep `default-features: false` so your Starfield project doesn't pull in
+   QTR Utils' Skyrim dependencies.
+3. Add `"overlay-ports": ["cmake/ports"]` to `vcpkg-configuration.json`.
+4. Run `vcpkg install --triplet x64-windows`.
+5. In your CMake project, replace `my_plugin` with your target name:
+
+   ```cmake
+   find_package(SFSE-MCP CONFIG REQUIRED)
+   target_link_libraries(my_plugin PRIVATE SFSE-MCP::SFSE-MCP)
+   ```
+
+You don't need to compile or link your own ImGui library for this menu.
+
+## 2. Add your menu
+
+Create `Menu.h`:
+
+```cpp
+#pragma once
+
+namespace Menu
+{
+    void Register();
+}
+```
+
+Create `Menu.cpp` and add it to your build:
+
+```cpp
+#include "Menu.h"
+#include <SFSEMCP/SFSEMenuFramework.hpp>
+
+namespace
+{
+    bool enabled = true;
+    float strength = 1.0f;
+
+    void __stdcall DrawSettings()
+    {
+        ImGuiMCP::TextUnformatted("Hello from my mod!");
+        ImGuiMCP::Checkbox("Enabled", &enabled);
+        ImGuiMCP::SliderFloat("Strength", &strength, 0.0f, 2.0f);
+
+        if (ImGuiMCP::Button("Reset"))
+        {
+            enabled = true;
+            strength = 1.0f;
+        }
+    }
 }
 
-// Call from your SFSE kPostLoad listener.
-void RegisterSettings() {
+void Menu::Register()
+{
+    if (!SFSEMenuFramework::IsInstalled())
+    {
+        return;
+    }
+
     SFSEMenuFramework::SetSection("My Mod");
     SFSEMenuFramework::AddSectionItem("Settings", &DrawSettings);
 }
 ```
 
-See the [example mod](https://github.com/QTR-Modding/SFSE-Menu-Framework-Example)
-for windows, fonts, events, input listeners and HUD elements.
+`My Mod` is the name in the left panel. `Settings` is the page underneath it.
+The framework calls `DrawSettings` each frame while that page is visible.
 
-Call the API from SFSE load callbacks or later, not `DllMain` or global
-initializers. Registering a menu early does not make game data ready.
+The checkbox and slider change the variables you pass to them. `Button`
+returns `true` when pressed. Replace these example variables with your mod's
+settings; saving them to disk is up to your mod.
 
-## Framework verification
+## 3. Register it with SFSE
 
-Before using a framework DLL, the SDK checks its signature, public key and
-loaded code. A detected mismatch shows an error and exits Starfield.
-If the framework is missing, calls can retry when it loads; `IsInstalled()`
-means a verified DLL is loaded, not just present on disk.
+**The page won't appear until your plugin calls `Menu::Register()`.**
 
-This cannot stop every form of tampering by another plugin in the same process,
-including changes made after verification. MSVC links Windows `Crypt32`
-automatically. Forks can choose their own public-key header at compile time with
-`SFSEMCP_SIGNING_KEY_HEADER`; there is no runtime switch to skip verification.
+If your plugin already has an SFSE message listener, include `Menu.h` and add
+this to its existing `kPostLoad` handler:
 
-## API notes
-
-<details>
-<summary>Callbacks, ownership and compatibility</summary>
-
-### Callbacks
-
-Draw with `ImGuiMCP` only in page, window or HUD callbacks. Lifecycle and input
-callbacks run outside the drawing frame. Do not let exceptions escape a callback.
-
-`AddEvent` handles menu open/close and before/after-render events; higher
-priorities run first. `AddInputEvent` can consume an event by returning `true`.
-`AddHudElement` draws before windows, including while the panel is closed.
-Delete these registration objects to unregister their callbacks.
-
-### Windows and fonts
-
-Window pointers from `AddWindow`, `AddWindowWithView` and `GetMainWindow`
-belong to the framework. They remain valid until exit; do not delete them.
-Use their atomic `IsOpen` and `BlockUserInput` fields to control the window.
-Check registration results for `nullptr`.
-
-Live font changes invalidate cached `ImFont*` pointers. Use the named font
-helpers inside your render callbacks. `PushFont` accepts a filename or stem;
-pair a successful Font Awesome push with `FontAwesome::Pop`.
-
-### Menu paths and porting
-
-Use `/` for nested sections and `\/` for a literal slash in a name.
-`FullPathAddSectionItem` takes a full path without the `SetSection` prefix.
-Check `GetMenuFrameworkAPIVersion() >= 1` before using `RenameSection` or
-`DeleteSection`. They return `false` for unavailable exports or invalid,
-missing or colliding paths.
-Do not use `GetMenuFrameworkVersion()` to check capabilities.
-
-For an SKSE-MCP port, change the include to `SFSEMCP/SFSEMenuFramework.hpp`,
-the namespace to `SFSEMenuFramework`, and your SKSE dependencies to SFSE.
-`ImGuiMCP`, `FontAwesome` and callback signatures keep the same calling style.
-Corrected spellings include `RegisterInputEvent` and `*Function`.
-Both `IsAnyBlockingWindowOpen` and its older `IsAnyBlockingWindowOpened`
-alias work. Registration objects cannot be copied.
-
-`AddWindowWithView` creates a normal window and ignores `viewName`.
-`LoadTexture` returns a null texture and `DisposeTexture` does nothing:
-framework wallpapers do not make these client texture functions available.
-
-</details>
-
-## Packaging and tests
-
-Generate the single-header ZIP with `./scripts/Package-Sdk.ps1`.
-It is written to `build/packages`; keep generated files out of source control.
-
-To run the SDK checks with the source headers and the extracted ZIP:
-
-```powershell
-./tests/run_signed_tests.ps1
-./tests/run_signed_tests.ps1 -Standalone
+```cpp
+Menu::Register();
 ```
+
+If it doesn't have a listener, add this to `plugin.cpp`:
+
+```cpp
+#include "Menu.h"
+#include <SFSE/SFSE.h>
+
+namespace
+{
+    void OnSFSEMessage(SFSE::MessagingInterface::Message* message)
+    {
+        if (message &&
+            message->type == SFSE::MessagingInterface::kPostLoad)
+        {
+            Menu::Register();
+        }
+    }
+}
+```
+
+Then register that listener in your **existing plugin entrypoint**, after
+`SFSE::Init(...)`:
+
+```cpp
+const auto* messaging = SFSE::GetMessagingInterface();
+if (!messaging || !messaging->RegisterListener(OnSFSEMessage))
+{
+    return false;
+}
+```
+
+Keep the rest of your entrypoint and its final `return true`. Don't add a
+second entrypoint or a second registration if you already have a listener.
+See the example mod's [complete plugin.cpp](https://github.com/QTR-Modding/SFSE-Menu-Framework-Example/blob/main/src/plugin.cpp)
+for this wiring in a working project.
+
+## 4. See it in game
+
+1. Install SFSE and SFSE Menu Framework in your game setup.
+2. Build your mod and install its DLL under `Data/SFSE/Plugins` (or that path
+   inside your mod manager's mod folder). Enable both mods.
+3. Launch the game through SFSE.
+4. Press **F1** and select **My Mod > Settings**.
+
+You should see the text, checkbox, slider and Reset button. If you changed the
+framework's menu binding, use that key instead.
+
+If the panel opens but your mod is missing, check that your DLL loaded and
+that your `kPostLoad` handler actually calls `Menu::Register()`.
+
+## More examples
+
+- [Menu registration, settings pages and separate windows](https://github.com/QTR-Modding/SFSE-Menu-Framework-Example/blob/main/src/Menu.cpp)
+- [Input listeners and persistent HUDs](https://github.com/QTR-Modding/SFSE-Menu-Framework-Example/blob/main/src/InputHudDemo.cpp)
+- [Fonts](https://github.com/QTR-Modding/SFSE-Menu-Framework-Example/blob/main/src/FontDemo.cpp)
+- [API reference and porting from SKSE-MCP](docs/API.md)
 
 ## License
 
-[MIT](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES) for the
-SKSE-MCP, Dear ImGui and cimgui credits and source revisions.
+[MIT](LICENSE). Using the SDK does not require your mod to adopt the framework's
+GPL license. Keep the included [third-party notices](THIRD_PARTY_NOTICES).
