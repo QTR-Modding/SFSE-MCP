@@ -32,11 +32,16 @@ set(
 add_library(SFSE-MCP INTERFACE ${SFSEMCP_PUBLIC_HEADERS})
 add_library(SFSE-MCP::SFSE-MCP ALIAS SFSE-MCP)
 
+find_path(SFSEMCP_SIGNING_INCLUDE_DIR CLibUtilsQTR/Signing.hpp
+    HINTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/clib-utils-qtr/include" REQUIRED)
+option(SFSEMCP_BUNDLE_SIGNING_HEADERS "Install the required QTR signing headers alongside the SDK" ON)
+
 target_compile_features(SFSE-MCP INTERFACE cxx_std_23)
 target_include_directories(
     SFSE-MCP
     INTERFACE
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        "$<BUILD_INTERFACE:${SFSEMCP_SIGNING_INCLUDE_DIR}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
@@ -60,12 +65,20 @@ set(_sfsemcp_cmake_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/SFSE-MCP")
 
 install(TARGETS SFSE-MCP EXPORT SFSE-MCPTargets)
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+if(SFSEMCP_BUNDLE_SIGNING_HEADERS)
+    install(FILES "${SFSEMCP_SIGNING_INCLUDE_DIR}/CLibUtilsQTR/Signing.hpp"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/CLibUtilsQTR")
+    install(DIRECTORY "${SFSEMCP_SIGNING_INCLUDE_DIR}/CLibUtilsQTR/Signing/"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/CLibUtilsQTR/Signing"
+        FILES_MATCHING PATTERN "*.hpp")
+endif()
 install(FILES LICENSE THIRD_PARTY_NOTICES DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/SFSE-MCP")
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SFSE-MCPConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/SFSE-MCPConfig.cmake"
     INSTALL_DESTINATION "${_sfsemcp_cmake_install_dir}"
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/SFSE-MCPConfigVersion.cmake"

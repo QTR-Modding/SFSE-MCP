@@ -1,7 +1,7 @@
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL https://github.com/QTR-Modding/SFSE-MCP.git
-    REF 7a18b515ccdd325f3dd32564ffd892c2599f485d
+    REF b5d0a2814ba76e20a058891b09e97706521fcf08
     HEAD_REF main
 )
 
@@ -9,6 +9,7 @@ vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
         -DBUILD_TESTING=OFF
+        -DSFSEMCP_BUNDLE_SIGNING_HEADERS=OFF
 )
 vcpkg_cmake_install()
 vcpkg_cmake_config_fixup(

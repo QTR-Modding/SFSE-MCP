@@ -4,5 +4,12 @@
   "version-semver": "0.12.0",
   "description": "Public C++23 SDK for SFSE menu integrations",
   "license": "MIT",
-  "supports": "windows & x64"
+  "supports": "windows & x64",
+  "dependencies": [
+    {
+      "name": "clib-utils-qtr",
+      "default-features": false
+    }
+  ],
+  "port-version": 1
 }
