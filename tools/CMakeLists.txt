@@ -4,8 +4,11 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 add_executable(sfsemcp_verify_signature verify_signature.cpp)
+find_path(SFSEMCP_SIGNING_INCLUDE_DIR CLibUtilsQTR/Signing.hpp
+    HINTS "${CMAKE_CURRENT_SOURCE_DIR}/../lib/clib-utils-qtr/include" REQUIRED)
 target_compile_features(sfsemcp_verify_signature PRIVATE cxx_std_23)
 target_include_directories(sfsemcp_verify_signature PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_include_directories(sfsemcp_verify_signature PRIVATE "${SFSEMCP_SIGNING_INCLUDE_DIR}")
 if(MSVC)
     target_compile_options(sfsemcp_verify_signature PRIVATE /W4 /WX /permissive- /EHsc)
 endif()

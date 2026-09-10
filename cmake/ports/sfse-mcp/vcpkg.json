@@ -7,6 +7,13 @@
   "supports": "windows & x64",
   "dependencies": [
     {
+      "name": "clib-utils-qtr",
+      "default-features": false,
+      "features": [
+        "signing"
+      ]
+    },
+    {
       "name": "vcpkg-cmake",
       "host": true
     },
@@ -14,5 +21,6 @@
       "name": "vcpkg-cmake-config",
       "host": true
     }
-  ]
+  ],
+  "port-version": 1
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VerifiedProvider.hpp"
+#include <CLibUtilsQTR/Signing.hpp>
 #if defined(SFSEMCP_SIGNING_KEY_HEADER)
 // Explicit compile-time trust selection, used by isolated tests and rebuilds.
 // A distributed client has one fixed key; there is no runtime bypass setting.
@@ -10,10 +11,7 @@
 #endif
 
 #include <cstdio>
-#include <utility>
-#include <atomic>
 #include <cstdlib>
-#include <map>
 
 namespace SFSEMCP::detail {
 
@@ -37,45 +35,24 @@ namespace SFSEMCP::detail {
 class ProviderBinding {
 public:
     VerifiedProvider* Get() {
-        std::lock_guard lock(mutex_);
-        return GetLocked();
+        BindingError error{};
+        auto* provider = binding_.Get(error);
+        Check(error);
+        return provider;
     }
 
     FARPROC Resolve(std::string_view name) {
-        std::lock_guard lock(mutex_);
-        auto* provider = GetLocked();
-        if (!provider) return nullptr;  // A missing host must remain retryable.
-        if (const auto found = exports_.find(name); found != exports_.end()) return found->second;
         BindingError error{};
-        const auto function = provider->Resolve(name, error);
-        if (error != BindingError::None) RejectProvider(error);
-        // Own the name and retain only results from this authenticated, pinned host.
-        // A missing optional export is also stable for that host.
-        exports_.emplace(name, function);
+        auto function = binding_.Resolve(name, error);
+        Check(error);
         return function;
     }
 
 private:
-    VerifiedProvider* GetLocked() {
-        if (provider_) return provider_.get();
-        BindingError error{};
-        auto module = FindProvider(error);
-        if (error == BindingError::Missing) return nullptr;
-        if (error != BindingError::None) RejectProvider(error);
-        auto candidate = std::make_unique<VerifiedProvider>();
-        error = candidate->Bind(module, ReleaseSigningKey);
-        if (error != BindingError::None) RejectProvider(error);
-        // Accepted framework code must remain resident through client teardown.
-        HMODULE pinned{};
-        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
-                reinterpret_cast<LPCWSTR>(module), &pinned) || pinned != module) RejectProvider(BindingError::Inspection);
-        provider_ = std::move(candidate);
-        return provider_.get();
+    static void Check(BindingError error) {
+        if (error != BindingError::None && error != BindingError::Missing) RejectProvider(error);
     }
-
-    std::mutex mutex_;
-    std::unique_ptr<VerifiedProvider> provider_;
-    std::map<std::string, FARPROC, std::less<>> exports_;
+    clib_utilsQTR::Signing::ProviderBinding binding_{L"SFSEMenuFramework.dll", ReleaseSigningKey};
 };
 
 inline ProviderBinding& Binding() {
@@ -95,31 +72,7 @@ inline FARPROC VerifiedFunction(const char* name) {
     return Binding().Resolve(name);
 }
 
-// Framework registration can precede provider loading. Do not permanently cache
-// a null lookup; successful bindings remain cheap, thread-safe function pointers.
 template<class T>
-class OptionalFunction {
-public:
-    explicit OptionalFunction(const char* name) : name_(name) {}
-    explicit operator bool() const { return Get() != nullptr; }
-    operator T() const { return Get(); }
-
-    template<class... Args>
-    decltype(auto) operator()(Args&&... args) const {
-        return Get()(std::forward<Args>(args)...);
-    }
-
-private:
-    T Get() const {
-        auto value = value_.load(std::memory_order_acquire);
-        if (!value) {
-            value = reinterpret_cast<T>(VerifiedFunction(name_));
-            if (value) value_.store(value, std::memory_order_release);
-        }
-        return value;
-    }
-    const char* name_;
-    mutable std::atomic<T> value_{};
-};
+using OptionalFunction = clib_utilsQTR::Signing::OptionalFunction<T, VerifiedFunction>;
 
 }

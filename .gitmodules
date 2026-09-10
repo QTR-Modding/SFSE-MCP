@@ -1,0 +1,3 @@
+[submodule "lib/clib-utils-qtr"]
+	path = lib/clib-utils-qtr
+	url = https://github.com/QTR-Modding/CLibUtilsQTR.git

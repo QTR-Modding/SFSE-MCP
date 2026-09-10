@@ -19,8 +19,7 @@ notices. No vcpkg, signing tools or private key is needed.
 
 ### Vcpkg
 
-1. Copy [cmake/ports/sfse-mcp](cmake/ports/sfse-mcp) into the same location in
-   your project.
+1. Copy both folders from [cmake/ports](cmake/ports) into your project's `cmake/ports`.
 2. Add `sfse-mcp` to the dependencies in your `vcpkg.json`.
 3. Add `"overlay-ports": ["cmake/ports"]` to your `vcpkg-configuration.json`.
 4. Run `vcpkg install --triplet x64-windows`.
@@ -34,6 +33,13 @@ target_link_libraries(my_plugin PRIVATE SFSE-MCP::SFSE-MCP)
 
 This adds the headers and C++23 requirement, not an ImGui library.
 While this repository is private, Git needs an account with access.
+
+### Source checkout
+
+Clone with `--recurse-submodules`, then add this repository with CMake's
+`add_subdirectory`. For a manual build, add both `include` and
+`lib/clib-utils-qtr/include` to your include paths. Only QTR Utils' signing
+headers are used; no Skyrim modules are required.
 
 ## Add a settings page
 

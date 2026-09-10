@@ -32,11 +32,15 @@ set(
 add_library(SFSE-MCP INTERFACE ${SFSEMCP_PUBLIC_HEADERS})
 add_library(SFSE-MCP::SFSE-MCP ALIAS SFSE-MCP)
 
+find_path(SFSEMCP_SIGNING_INCLUDE_DIR CLibUtilsQTR/Signing.hpp
+    HINTS "${CMAKE_CURRENT_SOURCE_DIR}/lib/clib-utils-qtr/include" REQUIRED)
+
 target_compile_features(SFSE-MCP INTERFACE cxx_std_23)
 target_include_directories(
     SFSE-MCP
     INTERFACE
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+        "$<BUILD_INTERFACE:${SFSEMCP_SIGNING_INCLUDE_DIR}>"
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 

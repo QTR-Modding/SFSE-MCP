@@ -3,6 +3,8 @@ param([string] $OutputDirectory)
 $ErrorActionPreference = 'Stop'
 $source = Split-Path -Parent $PSScriptRoot
 $include = [IO.Path]::GetFullPath((Join-Path $source 'include\SFSEMCP'))
+$qtr = [IO.Path]::GetFullPath((Join-Path $source 'lib\clib-utils-qtr'))
+$qtrInclude = Join-Path $qtr 'include'
 $project = [IO.File]::ReadAllText((Join-Path $source 'CMakeLists.txt'))
 if ($project -notmatch '(?m)^\s*VERSION\s+(\d+\.\d+\.\d+)\s*$') { throw 'SDK version not found.' }
 $version = $Matches[1]
@@ -17,17 +19,24 @@ foreach ($notice in @('LICENSE', 'THIRD_PARTY_NOTICES')) {
     [void] $text.Append("`n")
 }
 [void] $text.Append("*/`n")
+[void] $text.Append("/* CLibUtilsQTR signing module`n")
+[void] $text.Append([IO.File]::ReadAllText((Join-Path $qtr 'LICENSE')).Replace("`r`n", "`n"))
+[void] $text.Append("`n*/`n")
 
 function Expand-Header([string] $Path) {
     $fullPath = [IO.Path]::GetFullPath($Path)
-    if (-not $fullPath.StartsWith($include + '\', [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Header leaves the SDK include directory: $Path"
+    if (-not $fullPath.StartsWith($include + '\', [StringComparison]::OrdinalIgnoreCase) -and
+        -not $fullPath.StartsWith($qtrInclude + '\CLibUtilsQTR\Signing\', [StringComparison]::OrdinalIgnoreCase) -and
+        $fullPath -ine (Join-Path $qtrInclude 'CLibUtilsQTR\Signing.hpp')) {
+        throw "Header leaves the SDK or QTR signing include directory: $Path"
     }
     if (-not $headers.Add($fullPath)) { return }
     foreach ($line in [IO.File]::ReadAllLines($fullPath)) {
         if ($line -match '^\s*#\s*pragma\s+once\s*$') { continue }
         if ($line -match '^\s*#\s*include\s+"([^"]+)"\s*$') {
             Expand-Header (Join-Path (Split-Path -Parent $fullPath) $Matches[1])
+        } elseif ($line -match '^\s*#\s*include\s+<(CLibUtilsQTR/Signing(?:/[^>]+|\.hpp))>\s*$') {
+            Expand-Header (Join-Path $qtrInclude $Matches[1])
         } else {
             # Preserve system includes and the conditional custom signing-key include.
             [void] $text.Append($line).Append("`n")
@@ -37,7 +46,7 @@ function Expand-Header([string] $Path) {
 
 Expand-Header (Join-Path $include 'SFSEMenuFramework.hpp')
 $header = $text.ToString()
-if ($header -match '(?m)^\s*#\s*include\s*("|<SFSEMCP/)') {
+if ($header -match '(?m)^\s*#\s*include\s*("|<SFSEMCP/|<CLibUtilsQTR/)') {
     throw 'Generated header still depends on another SDK header.'
 }
 
