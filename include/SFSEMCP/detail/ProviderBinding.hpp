@@ -15,13 +15,20 @@
 
 namespace SFSEMCP::detail {
 
-[[noreturn]] inline void RejectProvider(BindingError error) {
+[[noreturn]] inline void RejectProvider(BindingError error,
+    const clib_utilsQTR::Signing::SignatureDiagnostic& diagnostic = {}) {
     const wchar_t* reason = L"The loaded framework could not be inspected.";
     if (error == BindingError::Signature) reason = L"The framework signature or signing key is not accepted.";
     if (error == BindingError::Image) reason = L"The loaded framework does not match its signed file, or multiple copies are loaded.";
     if (error == BindingError::Export) reason = L"A framework function is forwarded, modified, or outside the verified executable code.";
     std::wstring message = L"SFSE Menu Framework verification failed.\n\n";
     message += reason;
+    if (error == BindingError::Signature) {
+        wchar_t detail[256]{};
+        std::swprintf(detail, std::size(detail), L"\nVerification step: %ls (error 0x%08lX).",
+            diagnostic.stage, diagnostic.error);
+        message += detail;
+    }
     message += L"\n\nInstall the matching official framework and client versions, and remove conflicting replacements. "
                L"The process will stop without calling the unverified provider.";
     OutputDebugStringW(message.c_str());
@@ -36,21 +43,23 @@ class ProviderBinding {
 public:
     VerifiedProvider* Get() {
         BindingError error{};
-        auto* provider = binding_.Get(error);
-        Check(error);
+        clib_utilsQTR::Signing::SignatureDiagnostic diagnostic;
+        auto* provider = binding_.Get(error, &diagnostic);
+        Check(error, diagnostic);
         return provider;
     }
 
     FARPROC Resolve(std::string_view name) {
         BindingError error{};
-        auto function = binding_.Resolve(name, error);
-        Check(error);
+        clib_utilsQTR::Signing::SignatureDiagnostic diagnostic;
+        auto function = binding_.Resolve(name, error, &diagnostic);
+        Check(error, diagnostic);
         return function;
     }
 
 private:
-    static void Check(BindingError error) {
-        if (error != BindingError::None && error != BindingError::Missing) RejectProvider(error);
+    static void Check(BindingError error, const clib_utilsQTR::Signing::SignatureDiagnostic& diagnostic) {
+        if (error != BindingError::None && error != BindingError::Missing) RejectProvider(error, diagnostic);
     }
     clib_utilsQTR::Signing::ProviderBinding binding_{L"SFSEMenuFramework.dll", ReleaseSigningKey};
 };
