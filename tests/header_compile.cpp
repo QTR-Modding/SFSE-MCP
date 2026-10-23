@@ -38,6 +38,9 @@ static_assert(std::is_same_v<decltype(&Framework::DeleteSection), bool (*)(std::
 static_assert(std::is_same_v<decltype(&Framework::AddWindow), MCP::WindowInterface *(*)(RenderFunction, bool)>);
 static_assert(std::is_same_v<decltype(&Framework::AddWindowWithView),
                              MCP::WindowInterface *(*)(RenderFunction, std::string, bool)>);
+static_assert(std::is_same_v<decltype(&Framework::SetWindowBlurBackground), bool (*)(MCP::WindowInterface *, bool)>);
+static_assert(std::is_same_v<MCP::SetWindowBlurBackgroundFunction, bool (*)(MCP::WindowInterface *, bool)>);
+static_assert(sizeof(MCP::WindowInterface) == 2 * sizeof(std::atomic<bool>));
 static_assert(std::is_same_v<decltype(&Framework::AddEvent), MCP::Event *(*)(EventCallback, float)>);
 static_assert(std::is_constructible_v<MCP::Event, EventCallback>);
 static_assert(std::is_same_v<decltype(&Framework::AddInputEvent), MCP::InputEvent *(*)(InputCallback)>);
@@ -57,6 +60,10 @@ ButtonFunction volatile ConsumerButton = &ImGuiMCP::Button;
 
 [[maybe_unused]] MCP::Event *CompileDefaultEventPriority(EventCallback callback) {
     return Framework::AddEvent(callback);
+}
+
+[[maybe_unused]] bool CompileDefaultWindowBlur(MCP::WindowInterface *window) {
+    return Framework::SetWindowBlurBackground(window);
 }
 
 SFSEMCP::detail::ProviderBinding* OtherBindingAddress();

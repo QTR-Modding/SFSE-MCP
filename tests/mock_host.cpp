@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -19,9 +20,21 @@ extern "C" __declspec(dllexport) bool igButton(const char *label, const ImVec2 s
 
 extern "C" __declspec(dllexport) bool IsHotkeyEnabled() { return true; }
 
+namespace SFSEMenuFramework {
+namespace Model {
+class WindowInterface {
+public:
+    std::atomic<bool> IsOpen{false};
+    std::atomic<bool> BlockUserInput{true};
+};
+} // namespace Model
+} // namespace SFSEMenuFramework
+
 using InputEventCallback = bool(__stdcall *)(RE::InputEvent *);
 
 namespace {
+SFSEMenuFramework::Model::WindowInterface TestWindow;
+bool WindowBlurBackground = false;
 std::uint64_t LastUnregisteredInputEvent = 0;
 std::string LastSectionPath;
 std::string LastRenamePath;
@@ -30,6 +43,26 @@ std::string LastDeletePath;
 } // namespace
 
 using RenderFunction = void(__stdcall *)();
+
+extern "C" __declspec(dllexport) SFSEMenuFramework::Model::WindowInterface *AddWindow(const RenderFunction renderer) {
+    return renderer ? &TestWindow : nullptr;
+}
+
+extern "C" __declspec(dllexport) SFSEMenuFramework::Model::WindowInterface *AddWindowWithView(
+    const RenderFunction renderer, const char *) {
+    return AddWindow(renderer);
+}
+
+extern "C" __declspec(dllexport) bool SetWindowBlurBackground(
+    SFSEMenuFramework::Model::WindowInterface *window, const bool enabled) {
+    if (window != &TestWindow) {
+        return false;
+    }
+    WindowBlurBackground = enabled;
+    return true;
+}
+
+extern "C" __declspec(dllexport) bool GetWindowBlurBackground() { return WindowBlurBackground; }
 
 extern "C" __declspec(dllexport) void AddSectionItem(const char *path, const RenderFunction renderer) {
     LastSectionPath = path ? path : "";

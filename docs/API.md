@@ -19,6 +19,14 @@ belong to the framework. They remain valid until exit; do not delete them.
 Use their atomic `IsOpen` and `BlockUserInput` fields to control the window.
 Check registration results for `nullptr`.
 
+On frameworks with per-window blur support, separate windows default to no
+background blur. Request it with
+`SFSEMenuFramework::SetWindowBlurBackground(window, true)`; call
+`SetWindowBlurBackground(window)` or pass `false` to turn the request off.
+The user's global blur setting can disable all requests. The function returns
+`false` if the host lacks this export or the window is not a registered separate
+window. Older hosts retain their existing blur behavior.
+
 Live font changes invalidate cached `ImFont*` pointers. Use the named font
 helpers inside your render callbacks. `PushFont` accepts a filename or stem;
 pair a successful Font Awesome push with `FontAwesome::Pop`.

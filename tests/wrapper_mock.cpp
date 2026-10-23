@@ -93,5 +93,39 @@ int wmain(const int argc, wchar_t **argv) {
         return 33;
     }
 
+    using ReadBoolFunction = bool (*)();
+    const auto readWindowBlur = GetMenuFrameworkFunction<ReadBoolFunction>("GetWindowBlurBackground");
+    auto *window = SFSEMenuFramework::AddWindow(&RenderPanel);
+    if (!readWindowBlur || !window || !window->BlockUserInput.load() || readWindowBlur()) {
+        return 40;
+    }
+    if (!SFSEMenuFramework::SetWindowBlurBackground(window, true) || !readWindowBlur()) {
+        return 41;
+    }
+    if (!SFSEMenuFramework::SetWindowBlurBackground(window) || readWindowBlur()) {
+        return 42;
+    }
+    if (!SFSEMenuFramework::SetWindowBlurBackground(window, true) ||
+        !SFSEMenuFramework::SetWindowBlurBackground(window, false) || readWindowBlur()) {
+        return 43;
+    }
+    SFSEMenuFramework::Model::WindowInterface unknownWindow;
+    if (SFSEMenuFramework::SetWindowBlurBackground(nullptr, true) ||
+        SFSEMenuFramework::SetWindowBlurBackground(&unknownWindow, true) || readWindowBlur()) {
+        return 44;
+    }
+    window = SFSEMenuFramework::AddWindow(&RenderPanel, false);
+    if (!window || window->BlockUserInput.load()) {
+        return 45;
+    }
+    window = SFSEMenuFramework::AddWindowWithView(&RenderPanel, "View");
+    if (!window || !window->BlockUserInput.load()) {
+        return 46;
+    }
+    window = SFSEMenuFramework::AddWindowWithView(&RenderPanel, "View", false);
+    if (!window || window->BlockUserInput.load()) {
+        return 47;
+    }
+
     return 0;
 }
