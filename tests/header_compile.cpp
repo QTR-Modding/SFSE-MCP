@@ -62,10 +62,6 @@ ButtonFunction volatile ConsumerButton = &ImGuiMCP::Button;
     return Framework::AddEvent(callback);
 }
 
-[[maybe_unused]] bool CompileDefaultWindowBlur(MCP::WindowInterface *window) {
-    return Framework::SetWindowBlurBackground(window);
-}
-
 SFSEMCP::detail::ProviderBinding* OtherBindingAddress();
 
 int main() {
