@@ -86,6 +86,7 @@ namespace SFSEMenuFramework {
         using PushFontFunction = void (*)(const char* name);
         using AddWindowFunction = Model::WindowInterface* (*)(RenderFunction);
         using AddWindowWithViewFunction = Model::WindowInterface* (*)(RenderFunction, const char*);
+        using SetWindowBlurBackgroundFunction = bool (*)(Model::WindowInterface*, bool);
         using GetMainWindowFunction = Model::WindowInterface* (*)();
         using AddSectionItemFunction = void (*)(const char* path, RenderFunction rendererFunction);
         using RenameSectionFunction = bool (*)(const char* path, const char* newName);
@@ -216,6 +217,11 @@ namespace SFSEMenuFramework {
             return result;
         }
         return nullptr;
+    }
+    inline bool SetWindowBlurBackground(Model::WindowInterface* window, bool enabled = false) {
+        static auto func = Model::Internal::GetFunction<Model::SetWindowBlurBackgroundFunction>(
+            "SetWindowBlurBackground");
+        return func && func(window, enabled);
     }
     inline Model::WindowInterface* GetMainWindow() {
         static auto func = Model::Internal::GetFunction<Model::GetMainWindowFunction>("GetMainWindow");

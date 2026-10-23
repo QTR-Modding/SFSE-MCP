@@ -38,5 +38,11 @@ int wmain(const int a_argumentCount, wchar_t **a_arguments) {
         return 7;
     }
 
+    SFSEMenuFramework::Model::WindowInterface window;
+    if (SFSEMenuFramework::SetWindowBlurBackground(&window) ||
+        SFSEMenuFramework::SetWindowBlurBackground(&window, true)) {
+        return 8;
+    }
+
     return 0;
 }
