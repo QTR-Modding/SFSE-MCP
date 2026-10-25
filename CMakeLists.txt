@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(
     SFSE-MCP
-    VERSION 1.1.0
+    VERSION 1.1.1
     DESCRIPTION "Header-only client SDK for SFSE Menu Framework"
     LANGUAGES CXX
 )
