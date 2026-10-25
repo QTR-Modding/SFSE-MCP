@@ -123,6 +123,14 @@ add_test(NAME sfsemcp.unsigned_provider_rejected
     COMMAND sfsemcp_provider_binding signature "$<TARGET_FILE:sfsemcp_unsigned_mock_host>")
 set_tests_properties(sfsemcp.unsigned_provider_rejected PROPERTIES TIMEOUT 30)
 
+add_test(NAME sfsemcp.signature_diagnostic
+    COMMAND "${CMAKE_COMMAND}"
+        "-DEXECUTABLE=$<TARGET_FILE:sfsemcp_provider_binding>"
+        "-DHOST_DLL=$<TARGET_FILE:sfsemcp_wrong_key_mock_host>"
+        "-DMODE=signature_diagnostic"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/expect_rejection.cmake")
+set_tests_properties(sfsemcp.signature_diagnostic PROPERTIES TIMEOUT 15)
+
 set(_sfsemcp_tampered "${CMAKE_CURRENT_BINARY_DIR}/tampered/$<CONFIG>/SFSEMenuFramework.dll")
 add_test(NAME sfsemcp.wrong_signer_rejected
     COMMAND sfsemcp_provider_binding signature "$<TARGET_FILE:sfsemcp_wrong_key_mock_host>")

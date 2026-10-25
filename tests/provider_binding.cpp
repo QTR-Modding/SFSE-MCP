@@ -124,10 +124,14 @@ int wmain(int argc, wchar_t** argv) {
     if (mode == L"retry" && SFSEMenuFramework::IsHotkeyEnabled()) return 3;
     HMODULE module = LoadLibraryW(argv[2]);
     if (!module) return 4;
-    if (mode.starts_with(L"inspection_") || mode == L"reject_export") {
+    if (mode.starts_with(L"inspection_") || mode == L"reject_export" || mode == L"signature_diagnostic") {
         // Select stderr diagnostics without opening a dialog or creating a console.
         if (!PatchImport("GetConsoleWindow", reinterpret_cast<FARPROC>(&ConsoleForTest))) return 29;
         std::setvbuf(stderr, nullptr, _IONBF, 0);
+        if (mode == L"signature_diagnostic") {
+            GetMenuFrameworkModule();
+            return 39;
+        }
         if (mode == L"reject_export") {
             if (GetMenuFrameworkModule() != module) return 30;
             return CheckExports(module, true);
