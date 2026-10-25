@@ -1,6 +1,6 @@
 {
   "name": "sfse-mcp",
-  "version-semver": "1.1.1",
+  "version-semver": "1.1.2",
   "description": "Header-only C++ client SDK for SFSE Menu Framework",
   "homepage": "https://github.com/QTR-Modding/SFSE-MCP",
   "license": "MIT",
