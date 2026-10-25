@@ -8,6 +8,8 @@ execute_process(
 math(EXPR expected "0x53464D46")
 if(MODE STREQUAL "reject_export")
     set(reason "A framework function is forwarded, modified")
+elseif(MODE STREQUAL "signature_diagnostic")
+    set(reason "Verification step: trusted signing key \\(error 0x00000000\\)")
 else()
     set(reason "The loaded framework could not be inspected")
 endif()
