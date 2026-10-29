@@ -39,8 +39,9 @@ int wmain(const int a_argumentCount, wchar_t **a_arguments) {
     }
 
     SFSEMenuFramework::Model::WindowInterface window;
-    if (SFSEMenuFramework::SetWindowBlurBackground(&window) ||
-        SFSEMenuFramework::SetWindowBlurBackground(&window, true)) {
+    if (SFSEMenuFramework::SetWindowBlurBackground(&window, false) ||
+        SFSEMenuFramework::SetWindowBlurBackground(&window, true) ||
+        SFSEMenuFramework::SetWindowPauseGame(&window, true)) {
         return 8;
     }
 

@@ -35,6 +35,7 @@ using InputEventCallback = bool(__stdcall *)(RE::InputEvent *);
 namespace {
 SFSEMenuFramework::Model::WindowInterface TestWindow;
 bool WindowBlurBackground = false;
+bool WindowPauseGame = false;
 std::uint64_t LastUnregisteredInputEvent = 0;
 std::string LastSectionPath;
 std::string LastRenamePath;
@@ -63,6 +64,17 @@ extern "C" __declspec(dllexport) bool SetWindowBlurBackground(
 }
 
 extern "C" __declspec(dllexport) bool GetWindowBlurBackground() { return WindowBlurBackground; }
+
+extern "C" __declspec(dllexport) bool SetWindowPauseGame(
+    SFSEMenuFramework::Model::WindowInterface *window, const bool enabled) {
+    if (window != &TestWindow) {
+        return false;
+    }
+    WindowPauseGame = enabled;
+    return true;
+}
+
+extern "C" __declspec(dllexport) bool GetWindowPauseGame() { return WindowPauseGame; }
 
 extern "C" __declspec(dllexport) void AddSectionItem(const char *path, const RenderFunction renderer) {
     LastSectionPath = path ? path : "";

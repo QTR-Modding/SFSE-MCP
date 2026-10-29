@@ -102,7 +102,7 @@ int wmain(const int argc, wchar_t **argv) {
     if (!SFSEMenuFramework::SetWindowBlurBackground(window, true) || !readWindowBlur()) {
         return 41;
     }
-    if (!SFSEMenuFramework::SetWindowBlurBackground(window) || readWindowBlur()) {
+    if (!SFSEMenuFramework::SetWindowBlurBackground(window, false) || readWindowBlur()) {
         return 42;
     }
     if (!SFSEMenuFramework::SetWindowBlurBackground(window, true) ||
@@ -127,5 +127,19 @@ int wmain(const int argc, wchar_t **argv) {
         return 47;
     }
 
+    using ReadBool = bool (*)();
+    const auto readPause = GetMenuFrameworkFunction<ReadBool>("GetWindowPauseGame");
+    if (!readPause) { return 48; }
+    window = SFSEMenuFramework::AddWindow(&RenderPanel, true, true, true);
+    if (!window || !window->BlockUserInput || !readWindowBlur() || !readPause()) { return 49; }
+    if (!SFSEMenuFramework::SetWindowPauseGame(window, false) || readPause()) { return 50; }
+    window = SFSEMenuFramework::AddWindow(&RenderPanel);
+    if (!window || !window->BlockUserInput || readWindowBlur() || readPause()) { return 51; }
+    window = SFSEMenuFramework::AddWindowWithView(&RenderPanel, "View", false, true, true);
+    if (!window || window->BlockUserInput || !readWindowBlur() || !readPause()) { return 52; }
+    window = SFSEMenuFramework::AddWindowWithView(&RenderPanel, "View");
+    if (!window || !window->BlockUserInput || readWindowBlur() || readPause()) { return 53; }
+    if (SFSEMenuFramework::SetWindowPauseGame(nullptr, true) ||
+        SFSEMenuFramework::SetWindowPauseGame(&unknownWindow, true) || readPause()) { return 54; }
     return 0;
 }
