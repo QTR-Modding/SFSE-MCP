@@ -19,13 +19,21 @@ belong to the framework. They remain valid until exit; do not delete them.
 Use their atomic `IsOpen` and `BlockUserInput` fields to control the window.
 Check registration results for `nullptr`.
 
-On frameworks with per-window blur support, separate windows default to no
-background blur. Request it with
-`SFSEMenuFramework::SetWindowBlurBackground(window, true)`; call
-`SetWindowBlurBackground(window)` or pass `false` to turn the request off.
-The user's global blur setting can disable all requests. The function returns
-`false` if the host lacks this export or the window is not a registered separate
-window. Older hosts retain their existing blur behavior.
+Separate windows default to no background blur and no game pause:
+
+```cpp
+AddWindow(render, blockUserInput = true, blurBackground = false, pauseGame = false);
+AddWindowWithView(render, viewName, blockUserInput = true,
+                  blurBackground = false, pauseGame = false);
+```
+
+Change an existing window with `SetWindowBlurBackground(window, enabled)` or
+`SetWindowPauseGame(window, enabled)`. Both setters require an explicit bool and
+return `false` if the host lacks the export or the window is not a registered
+separate window. The user's global blur setting can disable blur requests.
+Pause requests are independent of the main menu's freeze-time setting and input
+blocking; the game stays paused while any open window requests it. Older hosts
+retain their existing pause behavior when they lack the pause setter.
 
 Live font changes invalidate cached `ImFont*` pointers. Use the named font
 helpers inside your render callbacks. `PushFont` accepts a filename or stem;

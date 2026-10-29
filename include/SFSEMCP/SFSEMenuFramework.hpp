@@ -87,6 +87,7 @@ namespace SFSEMenuFramework {
         using AddWindowFunction = Model::WindowInterface* (*)(RenderFunction);
         using AddWindowWithViewFunction = Model::WindowInterface* (*)(RenderFunction, const char*);
         using SetWindowBlurBackgroundFunction = bool (*)(Model::WindowInterface*, bool);
+        using SetWindowPauseGameFunction = bool (*)(Model::WindowInterface*, bool);
         using GetMainWindowFunction = Model::WindowInterface* (*)();
         using AddSectionItemFunction = void (*)(const char* path, RenderFunction rendererFunction);
         using RenameSectionFunction = bool (*)(const char* path, const char* newName);
@@ -195,33 +196,44 @@ namespace SFSEMenuFramework {
         return func && func(path.c_str());
     }
 
-    inline Model::WindowInterface* AddWindow(Model::RenderFunction rendererFunction, bool blockUserInput = true) {
+    inline bool SetWindowBlurBackground(Model::WindowInterface* window, bool enabled) {
+        static auto func = Model::Internal::GetFunction<Model::SetWindowBlurBackgroundFunction>(
+            "SetWindowBlurBackground");
+        return func && func(window, enabled);
+    }
+    inline bool SetWindowPauseGame(Model::WindowInterface* window, bool enabled) {
+        static auto func = Model::Internal::GetFunction<Model::SetWindowPauseGameFunction>(
+            "SetWindowPauseGame");
+        return func && func(window, enabled);
+    }
+    inline Model::WindowInterface* AddWindow(Model::RenderFunction rendererFunction, bool blockUserInput = true,
+                                             bool blurBackground = false, bool pauseGame = false) {
         static auto func = Model::Internal::GetFunction<Model::AddWindowFunction>("AddWindow");
         if (func) {
             auto result = func(rendererFunction);
             if (result) {
                 result->BlockUserInput = blockUserInput;
+                SetWindowBlurBackground(result, blurBackground);
+                SetWindowPauseGame(result, pauseGame);
             }
             return result;
         }
         return nullptr;
     }
     inline Model::WindowInterface* AddWindowWithView(Model::RenderFunction rendererFunction, std::string viewName,
-                                                     bool blockUserInput = true) {
+                                                     bool blockUserInput = true, bool blurBackground = false,
+                                                     bool pauseGame = false) {
         static auto func = Model::Internal::GetFunction<Model::AddWindowWithViewFunction>("AddWindowWithView");
         if (func) {
             auto result = func(rendererFunction, viewName.c_str());
             if (result) {
                 result->BlockUserInput = blockUserInput;
+                SetWindowBlurBackground(result, blurBackground);
+                SetWindowPauseGame(result, pauseGame);
             }
             return result;
         }
         return nullptr;
-    }
-    inline bool SetWindowBlurBackground(Model::WindowInterface* window, bool enabled = false) {
-        static auto func = Model::Internal::GetFunction<Model::SetWindowBlurBackgroundFunction>(
-            "SetWindowBlurBackground");
-        return func && func(window, enabled);
     }
     inline Model::WindowInterface* GetMainWindow() {
         static auto func = Model::Internal::GetFunction<Model::GetMainWindowFunction>("GetMainWindow");
