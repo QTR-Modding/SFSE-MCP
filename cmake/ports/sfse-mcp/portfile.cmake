@@ -1,7 +1,7 @@
 vcpkg_from_git(
     OUT_SOURCE_PATH SOURCE_PATH
     URL https://github.com/QTR-Modding/SFSE-MCP.git
-    REF 8599848880a818f49e4f1134ccade7e5514922c4
+    REF 9c50c11aeb0757ad4ed876c8709337ca24d9843b
     FETCH_REF v1.2.0
     HEAD_REF main
 )
